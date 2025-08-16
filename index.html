@@ -1,0 +1,1317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Word Learning App - Enhanced Version</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-color: #51cf66;
+            --error-color: #ff6b6b;
+            --warning-color: #ffd93d;
+            --bg-color: #f5f7fa;
+            --text-color: #333;
+            --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            --transition-speed: 0.3s;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: var(--primary-gradient);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--text-color);
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Particles Background */
+        #particles-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: float 15s infinite linear;
+        }
+
+        @keyframes float {
+            from {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            to {
+                transform: translateY(-100vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        /* Header with blur effect */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            position: relative;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        .logo-icon {
+            width: 30px;
+            height: 30px;
+            background: var(--primary-gradient);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        /* Stats with animation */
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 14px;
+        }
+
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            background: rgba(102, 126, 234, 0.1);
+            border-radius: 20px;
+            transition: transform 0.3s;
+        }
+
+        .stat-item:hover {
+            transform: scale(1.05);
+        }
+
+        .stat-value {
+            font-weight: bold;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Main container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Progress with animation */
+        .progress-container {
+            width: 100%;
+            max-width: 350px;
+            margin-bottom: 20px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fff, #f0f0f0);
+            border-radius: 4px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.5), 
+                transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .progress-text {
+            text-align: center;
+            color: white;
+            margin-top: 5px;
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        /* Card with 3D effect */
+        .card-container {
+            width: 100%;
+            max-width: 350px;
+            height: 450px;
+            perspective: 1000px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+
+        .card.flipped {
+            transform: rotateY(180deg);
+        }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 20px;
+            box-shadow: var(--card-shadow);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            background: white;
+            overflow: hidden;
+        }
+
+        .card-face::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            animation: rotate 30s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .card-back {
+            transform: rotateY(180deg);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+
+        /* Word display with animation */
+        .word {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            animation: fadeInScale 0.5s ease-out;
+        }
+
+        @keyframes fadeInScale {
+            0% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .pronunciation {
+            font-size: 18px;
+            color: #666;
+            margin-bottom: 10px;
+            font-style: italic;
+            position: relative;
+            z-index: 1;
+        }
+
+        .difficulty-indicator {
+            display: flex;
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .difficulty-star {
+            font-size: 20px;
+            color: #ddd;
+            transition: color 0.3s;
+        }
+
+        .difficulty-star.active {
+            color: #ffd93d;
+            animation: starPulse 0.5s ease-out;
+        }
+
+        @keyframes starPulse {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        /* Enhanced controls */
+        .controls {
+            display: flex;
+            gap: 15px;
+            width: 100%;
+            max-width: 350px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.5);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:active::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-wrong {
+            background: var(--error-color);
+            color: white;
+        }
+
+        .btn-correct {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-flip {
+            background: #667eea;
+            color: white;
+        }
+
+        /* Streak counter */
+        .streak-container {
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: white;
+            padding: 10px 15px;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 100;
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .streak-flame {
+            font-size: 24px;
+            animation: flameFlicker 1s infinite;
+        }
+
+        @keyframes flameFlicker {
+            0%, 100% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.1) rotate(-5deg); }
+            75% { transform: scale(0.95) rotate(5deg); }
+        }
+
+        .streak-number {
+            font-size: 20px;
+            font-weight: bold;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* Settings panel */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background: white;
+            box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1);
+            transition: right 0.3s ease-out;
+            z-index: 200;
+            padding: 20px;
+        }
+
+        .settings-panel.active {
+            right: 0;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .settings-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .settings-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .setting-item {
+            margin-bottom: 20px;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .setting-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 26px;
+            background: #ccc;
+            border-radius: 13px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: var(--success-color);
+        }
+
+        .toggle-knob {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: left 0.3s;
+        }
+
+        .toggle-switch.active .toggle-knob {
+            left: 27px;
+        }
+
+        /* Achievement notification */
+        .achievement {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 300;
+            transition: top 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .achievement.show {
+            top: 100px;
+        }
+
+        .achievement-icon {
+            font-size: 30px;
+            animation: bounce 0.5s ease-out;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .achievement-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .achievement-title {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .achievement-desc {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Confetti effect */
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #667eea;
+            position: absolute;
+            animation: confettiFall 3s linear;
+        }
+
+        @keyframes confettiFall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Voice button */
+        .voice-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(102, 126, 234, 0.1);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .voice-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: scale(1.1);
+        }
+
+        .voice-btn.playing {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(102, 126, 234, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(102, 126, 234, 0); }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .word {
+                font-size: 28px;
+            }
+            
+            .card-container {
+                height: 400px;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+
+        /* Dark mode */
+        body.dark-mode {
+            --bg-color: #1a1a2e;
+            --text-color: #eee;
+        }
+
+        body.dark-mode .header {
+            background: rgba(26, 26, 46, 0.95);
+            color: #eee;
+        }
+
+        body.dark-mode .card-face {
+            background: #16213e;
+            color: #eee;
+        }
+
+        /* Loading spinner */
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated background particles -->
+    <div id="particles-bg"></div>
+
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">
+            <div class="logo-icon">📚</div>
+            <span>Word Cards</span>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <span>✅</span>
+                <span class="stat-value" id="learned-count">0</span>
+            </div>
+            <div class="stat-item">
+                <span>📖</span>
+                <span class="stat-value" id="remaining-count">0</span>
+            </div>
+            <button class="settings-btn" onclick="toggleSettings()">⚙️</button>
+        </div>
+    </div>
+
+    <!-- Streak counter -->
+    <div class="streak-container" id="streak-container" style="display: none;">
+        <span class="streak-flame">🔥</span>
+        <span class="streak-number" id="streak-number">0</span>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-container">
+        <div class="progress-container">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress" style="width: 0%"></div>
+            </div>
+            <div class="progress-text" id="progress-text">0% изучено</div>
+        </div>
+
+        <div class="card-container">
+            <div class="card" id="card">
+                <div class="card-face card-front">
+                    <button class="voice-btn" onclick="playPronunciation()">🔊</button>
+                    <div class="word" id="word">Loading...</div>
+                    <div class="pronunciation" id="pronunciation"></div>
+                    <div class="difficulty-indicator" id="difficulty"></div>
+                </div>
+                <div class="card-face card-back">
+                    <div class="translation" id="translation"></div>
+                    <div class="example" id="example">
+                        <div id="example-text"></div>
+                        <div class="example-translation" id="example-translation"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="btn btn-wrong" onclick="markWrong()">
+                <span>❌</span>
+                <span>Не знаю</span>
+            </button>
+            <button class="btn btn-flip" onclick="flipCard()">
+                <span>🔄</span>
+                <span>Перевернуть</span>
+            </button>
+            <button class="btn btn-correct" onclick="markCorrect()">
+                <span>✅</span>
+                <span>Знаю</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Settings panel -->
+    <div class="settings-panel" id="settings-panel">
+        <div class="settings-header">
+            <span class="settings-title">Настройки</span>
+            <button class="settings-close" onclick="toggleSettings()">✕</button>
+        </div>
+        
+        <div class="setting-item">
+            <label class="setting-label">Звуковые эффекты</label>
+            <div class="setting-toggle">
+                <div class="toggle-switch" id="sound-toggle" onclick="toggleSound()">
+                    <div class="toggle-knob"></div>
+                </div>
+                <span>Вкл/Выкл</span>
+            </div>
+        </div>
+        
+        <div class="setting-item">
+            <label class="setting-label">Темная тема</label>
+            <div class="setting-toggle">
+                <div class="toggle-switch" id="theme-toggle" onclick="toggleTheme()">
+                    <div class="toggle-knob"></div>
+                </div>
+                <span>Вкл/Выкл</span>
+            </div>
+        </div>
+        
+        <div class="setting-item">
+            <label class="setting-label">Автопереворот</label>
+            <div class="setting-toggle">
+                <div class="toggle-switch" id="autoflip-toggle" onclick="toggleAutoflip()">
+                    <div class="toggle-knob"></div>
+                </div>
+                <span>Через 3 сек</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Achievement notification -->
+    <div class="achievement" id="achievement">
+        <span class="achievement-icon">🏆</span>
+        <div class="achievement-text">
+            <span class="achievement-title">Достижение!</span>
+            <span class="achievement-desc" id="achievement-desc">Первые 10 слов</span>
+        </div>
+    </div>
+
+    <script>
+        // Telegram WebApp initialization
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // API configuration
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000' 
+            : window.location.origin;
+        const USER_ID = tg.initDataUnsafe?.user?.id || 'demo_user';
+        
+        // Telegram WebApp theme
+        if (tg.colorScheme === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+        
+        // Set main button
+        tg.MainButton.text = "Добавить слово";
+        tg.MainButton.show();
+        tg.MainButton.onClick(() => {
+            const word = prompt("Введите английское слово:");
+            if (word) {
+                addNewWord(word);
+            }
+        });
+
+        // App state
+        let words = [];
+        let currentIndex = 0;
+        let learnedCount = 0;
+        let streak = 0;
+        let settings = {
+            soundEnabled: true,
+            darkMode: false,
+            autoflip: false
+        };
+
+        // Create background particles
+        function createParticles() {
+            const particlesBg = document.getElementById('particles-bg');
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+                particlesBg.appendChild(particle);
+            }
+        }
+
+        // Load words from API
+        async function loadWords() {
+            try {
+                const response = await fetch(`${API_URL}/api/words/${USER_ID}`);
+                if (response.ok) {
+                    words = await response.json();
+                    if (words.length === 0) {
+                        // Load sample words if no words exist
+                        words = getSampleWords();
+                    }
+                } else {
+                    words = getSampleWords();
+                }
+            } catch (error) {
+                console.error('Error loading words:', error);
+                words = getSampleWords();
+            }
+            
+            updateStats();
+            showCard();
+        }
+
+        // Sample words for demo
+        function getSampleWords() {
+            return [
+                {
+                    id: 1,
+                    word: "serendipity",
+                    pronunciation: "[ˌserənˈdɪpɪti]",
+                    translation: "счастливая случайность",
+                    example: "Finding that book was pure serendipity",
+                    exampleTranslation: "Найти эту книгу было чистой случайностью",
+                    learned: false,
+                    difficulty: 3
+                },
+                {
+                    id: 2,
+                    word: "resilient",
+                    pronunciation: "[rɪˈzɪliənt]",
+                    translation: "стойкий, упругий",
+                    example: "Children are often very resilient",
+                    exampleTranslation: "Дети часто очень стойкие",
+                    learned: false,
+                    difficulty: 2
+                },
+                {
+                    id: 3,
+                    word: "ephemeral",
+                    pronunciation: "[ɪˈfemərəl]",
+                    translation: "эфемерный, недолговечный",
+                    example: "Fame is often ephemeral",
+                    exampleTranslation: "Слава часто недолговечна",
+                    learned: false,
+                    difficulty: 4
+                }
+            ];
+        }
+
+        // Update statistics
+        function updateStats() {
+            learnedCount = words.filter(w => w.learned).length;
+            const remaining = words.length - learnedCount;
+            
+            document.getElementById('learned-count').textContent = learnedCount;
+            document.getElementById('remaining-count').textContent = remaining;
+            
+            const progress = words.length > 0 ? (learnedCount / words.length) * 100 : 0;
+            document.getElementById('progress').style.width = progress + '%';
+            document.getElementById('progress-text').textContent = `${Math.round(progress)}% изучено`;
+            
+            // Update streak
+            if (streak > 0) {
+                document.getElementById('streak-container').style.display = 'flex';
+                document.getElementById('streak-number').textContent = streak;
+            }
+        }
+
+        // Show current card
+        function showCard() {
+            const unlearned = words.filter(w => !w.learned);
+            if (unlearned.length === 0) {
+                showCompletion();
+                return;
+            }
+            
+            const word = unlearned[currentIndex % unlearned.length];
+            
+            document.getElementById('word').textContent = word.word;
+            document.getElementById('pronunciation').textContent = word.pronunciation;
+            document.getElementById('translation').textContent = word.translation;
+            document.getElementById('example-text').textContent = word.example;
+            document.getElementById('example-translation').textContent = word.exampleTranslation;
+            
+            // Show difficulty stars
+            const difficultyContainer = document.getElementById('difficulty');
+            difficultyContainer.innerHTML = '';
+            for (let i = 1; i <= 5; i++) {
+                const star = document.createElement('span');
+                star.className = 'difficulty-star';
+                star.textContent = '⭐';
+                if (i <= word.difficulty) {
+                    star.classList.add('active');
+                }
+                difficultyContainer.appendChild(star);
+            }
+            
+            // Reset card flip
+            document.getElementById('card').classList.remove('flipped');
+            
+            // Auto-flip if enabled
+            if (settings.autoflip) {
+                setTimeout(() => {
+                    if (!document.getElementById('card').classList.contains('flipped')) {
+                        flipCard();
+                    }
+                }, 3000);
+            }
+        }
+
+        // Flip card animation
+        function flipCard() {
+            const card = document.getElementById('card');
+            card.classList.toggle('flipped');
+            
+            if (settings.soundEnabled) {
+                playSound('flip');
+            }
+        }
+
+        // Mark word as correct
+        function markCorrect() {
+            const unlearned = words.filter(w => !w.learned);
+            if (unlearned.length === 0) return;
+            
+            const word = unlearned[currentIndex % unlearned.length];
+            word.learned = true;
+            learnedCount++;
+            streak++;
+            
+            // Check for achievements
+            checkAchievements();
+            
+            // Play success sound and haptic feedback
+            if (settings.soundEnabled) {
+                playSound('success');
+            }
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+            
+            // Create confetti effect
+            createConfetti();
+            
+            // Update API
+            updateWordStatus(word.id, true);
+            
+            currentIndex++;
+            updateStats();
+            showCard();
+        }
+
+        // Mark word as wrong
+        function markWrong() {
+            const unlearned = words.filter(w => !w.learned);
+            if (unlearned.length === 0) return;
+            
+            const word = unlearned[currentIndex % unlearned.length];
+            word.difficulty = Math.min(word.difficulty + 1, 5);
+            streak = 0;
+            
+            if (settings.soundEnabled) {
+                playSound('wrong');
+            }
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('error');
+            }
+            
+            currentIndex++;
+            updateStats();
+            showCard();
+        }
+
+        // Update word status in API
+        async function updateWordStatus(wordId, learned) {
+            try {
+                await fetch(`${API_URL}/api/words/update`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ word_id: wordId, learned })
+                });
+            } catch (error) {
+                console.error('Error updating word status:', error);
+            }
+        }
+
+        // Play pronunciation (TTS)
+        function playPronunciation() {
+            const word = words.filter(w => !w.learned)[currentIndex % words.filter(w => !w.learned).length];
+            if (!word) return;
+            
+            const voiceBtn = document.querySelector('.voice-btn');
+            voiceBtn.classList.add('playing');
+            
+            // Use Web Speech API
+            const utterance = new SpeechSynthesisUtterance(word.word);
+            utterance.lang = 'en-US';
+            utterance.rate = 0.8;
+            
+            utterance.onend = () => {
+                voiceBtn.classList.remove('playing');
+            };
+            
+            speechSynthesis.speak(utterance);
+        }
+
+        // Sound effects
+        function playSound(type) {
+            if (!settings.soundEnabled) return;
+            
+            // Create audio context for simple sounds
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            switch(type) {
+                case 'success':
+                    oscillator.frequency.value = 800;
+                    gainNode.gain.value = 0.1;
+                    break;
+                case 'wrong':
+                    oscillator.frequency.value = 300;
+                    gainNode.gain.value = 0.1;
+                    break;
+                case 'flip':
+                    oscillator.frequency.value = 600;
+                    gainNode.gain.value = 0.05;
+                    break;
+            }
+            
+            oscillator.start();
+            oscillator.stop(audioContext.currentTime + 0.1);
+        }
+
+        // Create confetti effect
+        function createConfetti() {
+            const colors = ['#667eea', '#764ba2', '#51cf66', '#ffd93d', '#ff6b6b'];
+            
+            for (let i = 0; i < 30; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + '%';
+                    confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                    confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                    document.body.appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 3000);
+                }, i * 30);
+            }
+        }
+
+        // Check achievements
+        function checkAchievements() {
+            const achievements = [
+                { count: 1, title: 'Первое слово!', desc: 'Отличное начало!' },
+                { count: 10, title: 'Десяточка!', desc: 'Изучено 10 слов' },
+                { count: 25, title: 'Четверть сотни!', desc: 'Изучено 25 слов' },
+                { count: 50, title: 'Полсотни!', desc: 'Изучено 50 слов' },
+                { count: 100, title: 'Сотня!', desc: 'Изучено 100 слов' }
+            ];
+            
+            const achievement = achievements.find(a => a.count === learnedCount);
+            if (achievement) {
+                showAchievement(achievement.title, achievement.desc);
+            }
+            
+            // Streak achievements
+            if (streak === 5) {
+                showAchievement('В ударе!', '5 слов подряд');
+            } else if (streak === 10) {
+                showAchievement('Неудержимый!', '10 слов подряд');
+            }
+        }
+
+        // Show achievement notification
+        function showAchievement(title, desc) {
+            const achievementEl = document.getElementById('achievement');
+            document.getElementById('achievement-desc').textContent = desc;
+            
+            achievementEl.classList.add('show');
+            
+            if (tg.HapticFeedback) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+            
+            setTimeout(() => {
+                achievementEl.classList.remove('show');
+            }, 3000);
+        }
+
+        // Show completion screen
+        function showCompletion() {
+            const container = document.querySelector('.card-container');
+            container.innerHTML = `
+                <div style="text-align: center; color: white;">
+                    <div style="font-size: 60px; margin-bottom: 20px;">🎉</div>
+                    <h2>Поздравляем!</h2>
+                    <p>Вы изучили все слова!</p>
+                    <button class="btn btn-flip" onclick="resetProgress()" style="margin-top: 20px;">
+                        Начать заново
+                    </button>
+                </div>
+            `;
+            
+            createConfetti();
+        }
+
+        // Reset progress
+        function resetProgress() {
+            words.forEach(w => {
+                w.learned = false;
+                w.difficulty = 0;
+            });
+            learnedCount = 0;
+            currentIndex = 0;
+            streak = 0;
+            updateStats();
+            location.reload();
+        }
+
+        // Settings functions
+        function toggleSettings() {
+            const panel = document.getElementById('settings-panel');
+            panel.classList.toggle('active');
+        }
+
+        function toggleSound() {
+            settings.soundEnabled = !settings.soundEnabled;
+            document.getElementById('sound-toggle').classList.toggle('active');
+            localStorage.setItem('soundEnabled', settings.soundEnabled);
+        }
+
+        function toggleTheme() {
+            settings.darkMode = !settings.darkMode;
+            document.body.classList.toggle('dark-mode');
+            document.getElementById('theme-toggle').classList.toggle('active');
+            localStorage.setItem('darkMode', settings.darkMode);
+        }
+
+        function toggleAutoflip() {
+            settings.autoflip = !settings.autoflip;
+            document.getElementById('autoflip-toggle').classList.toggle('active');
+            localStorage.setItem('autoflip', settings.autoflip);
+        }
+
+        // Load settings from localStorage
+        function loadSettings() {
+            settings.soundEnabled = localStorage.getItem('soundEnabled') !== 'false';
+            settings.darkMode = localStorage.getItem('darkMode') === 'true';
+            settings.autoflip = localStorage.getItem('autoflip') === 'true';
+            
+            if (settings.soundEnabled) {
+                document.getElementById('sound-toggle').classList.add('active');
+            }
+            if (settings.darkMode) {
+                document.body.classList.add('dark-mode');
+                document.getElementById('theme-toggle').classList.add('active');
+            }
+            if (settings.autoflip) {
+                document.getElementById('autoflip-toggle').classList.add('active');
+            }
+        }
+
+        // Keyboard controls
+        document.addEventListener('keydown', (e) => {
+            switch(e.key) {
+                case ' ':
+                    e.preventDefault();
+                    flipCard();
+                    break;
+                case 'ArrowLeft':
+                    markWrong();
+                    break;
+                case 'ArrowRight':
+                    markCorrect();
+                    break;
+                case 'Escape':
+                    toggleSettings();
+                    break;
+            }
+        });
+
+        // Touch gestures
+        let touchStartX = 0;
+        let touchStartY = 0;
+        let touchEndX = 0;
+        let touchEndY = 0;
+
+        const card = document.getElementById('card');
+        
+        card.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+            touchStartY = e.changedTouches[0].screenY;
+        });
+
+        card.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            touchEndY = e.changedTouches[0].screenY;
+            handleGesture();
+        });
+
+        function handleGesture() {
+            const swipeThreshold = 50;
+            const diffX = touchEndX - touchStartX;
+            const diffY = touchEndY - touchStartY;
+            
+            if (Math.abs(diffX) > Math.abs(diffY)) {
+                // Horizontal swipe
+                if (Math.abs(diffX) > swipeThreshold) {
+                    if (diffX > 0) {
+                        markCorrect();
+                    } else {
+                        markWrong();
+                    }
+                }
+            } else {
+                // Vertical swipe or tap
+                if (Math.abs(diffY) < 20 && Math.abs(diffX) < 20) {
+                    flipCard();
+                }
+            }
+        }
+
+        // Add new word function
+        async function addNewWord(word) {
+            try {
+                tg.MainButton.showProgress();
+                
+                const response = await fetch(`${API_URL}/api/words/${USER_ID}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ word: word.toLowerCase() })
+                });
+                
+                if (response.ok) {
+                    const newWord = await response.json();
+                    words.push(newWord);
+                    updateStats();
+                    showCard();
+                    
+                    tg.showPopup({
+                        title: 'Слово добавлено!',
+                        message: `"${word}" успешно добавлено в вашу коллекцию`,
+                        buttons: [{type: 'ok'}]
+                    });
+                } else {
+                    throw new Error('Failed to add word');
+                }
+            } catch (error) {
+                console.error('Error adding word:', error);
+                tg.showAlert('Ошибка при добавлении слова. Попробуйте еще раз.');
+            } finally {
+                tg.MainButton.hideProgress();
+            }
+        }
+
+        // Initialize app
+        window.addEventListener('load', () => {
+            createParticles();
+            loadSettings();
+            loadWords();
+            
+            // Set Telegram theme colors
+            if (tg.themeParams) {
+                document.body.style.setProperty('--tg-bg-color', tg.themeParams.bg_color || '#667eea');
+                document.body.style.setProperty('--tg-text-color', tg.themeParams.text_color || '#fff');
+            }
+        });
+
+        // Handle visibility change (save progress)
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                // Save current progress
+                const progress = {
+                    currentIndex,
+                    learnedCount,
+                    streak,
+                    words: words.map(w => ({ id: w.id, learned: w.learned, difficulty: w.difficulty }))
+                };
+                localStorage.setItem('progress', JSON.stringify(progress));
+            }
+        });
+    </script>
+</body>
+</html>
