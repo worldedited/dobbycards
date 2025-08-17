@@ -831,14 +831,31 @@
         // Load words from API
         async function loadWords() {
             try {
+                console.log('Loading words for user:', USER_ID);
                 const response = await fetch(`${API_URL}/api/words/${USER_ID}`);
+                
                 if (response.ok) {
-                    words = await response.json();
-                    if (words.length === 0) {
-                        // Load sample words if no words exist
+                    const apiWords = await response.json();
+                    console.log('API response:', apiWords);
+                    
+                    if (apiWords.length === 0) {
+                        console.log('No words found, using sample words');
                         words = getSampleWords();
+                    } else {
+                        // Convert API format to frontend format
+                        words = apiWords.map(word => ({
+                            id: word.id,
+                            word: word.word,
+                            pronunciation: word.pronunciation || `[${word.word}]`,
+                            translation: word.translation || 'перевод не найден',
+                            example: word.example || `Example with ${word.word}`,
+                            exampleTranslation: word.example_translation || `Пример с ${word.word}`,
+                            learned: word.learned || false,
+                            difficulty: word.difficulty || 1
+                        }));
                     }
                 } else {
+                    console.log('API error, using sample words');
                     words = getSampleWords();
                 }
             } catch (error) {
@@ -846,6 +863,7 @@
                 words = getSampleWords();
             }
             
+            console.log('Final words array:', words);
             updateStats();
             showCard();
         }
