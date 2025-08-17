@@ -3,36 +3,53 @@
 FastAPI server for Telegram Flashcards Bot API
 """
 
-import os
 import json
 import asyncio
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import select, func
-
-from models import Base, User, Word, TranslationCache
-from bot import TranslationService, DatabaseManager
+from typing import List, Optional
+import asyncio
+import logging
+from datetime import datetime
+import os
 from dotenv import load_dotenv
 
-# Load environment variables
+# Import our models and database manager
+from models import Base, User, Word, TranslationCache
+from bot import TranslationService, DatabaseManager
+
 load_dotenv()
 
-# Create FastAPI app
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Database manager
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///flashcards.db")
+db_manager = DatabaseManager(DATABASE_URL)
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Initialize database on startup"""
+    await db_manager.init_db()
+    yield
+
+# Initialize FastAPI app
 app = FastAPI(
-    title="Telegram Flashcards Bot API",
-    description="API for Telegram Mini App flashcards bot",
-    version="1.0.0"
+    title="Telegram Flashcards API",
+    description="API for Telegram Mini App Flashcards Bot",
+    version="1.0.0",
+    lifespan=lifespan
 )
 
-# Add CORS middleware
+# CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -42,10 +59,7 @@ app.add_middleware(
 )
 
 # Initialize services
-database_url = os.getenv('DATABASE_URL', 'sqlite+aiosqlite:///flashcards.db')
 fireworks_api_key = os.getenv('FIREWORKS_API_KEY')
-
-db_manager = DatabaseManager(database_url)
 translator = TranslationService(fireworks_api_key) if fireworks_api_key else None
 
 # Pydantic models
@@ -78,10 +92,6 @@ class StatsResponse(BaseModel):
 
 # API Routes
 
-@app.on_event("startup")
-async def startup_event():
-    """Initialize database on startup"""
-    await db_manager.init_db()
 
 @app.get("/")
 async def root():
@@ -199,4 +209,4 @@ if __name__ == "__main__":
     host = os.getenv('API_HOST', '0.0.0.0')
     port = int(os.getenv('API_PORT', 8000))
     
-    uvicorn.run(app, host=host, port=port, reload=True)
+    uvicorn.run("main:app", host=host, port=port, reload=True)

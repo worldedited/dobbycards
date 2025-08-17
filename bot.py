@@ -285,18 +285,16 @@ class FlashcardsBot:
         # Create application
         self.application = Application.builder().token(self.token).build()
         
+        # Add error handler
+        self.application.add_error_handler(self.error_handler)
+        
         # Add handlers
-        self._add_handlers()
-    
-    def _add_handlers(self):
-        """Add command and message handlers"""
         self.application.add_handler(CommandHandler("start", self.start_command))
         self.application.add_handler(CommandHandler("help", self.help_command))
-        self.application.add_handler(CommandHandler("add", self.add_word_command))
-        self.application.add_handler(CommandHandler("learn", self.learn_command))
+        self.application.add_handler(CommandHandler("cards", self.learn_command))
         self.application.add_handler(CommandHandler("stats", self.stats_command))
-        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
         self.application.add_handler(CallbackQueryHandler(self.handle_callback))
+        self.application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
     
     async def start_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /start command"""
@@ -391,30 +389,37 @@ class FlashcardsBot:
         )
     
     async def stats_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle /stats command"""
+        """Show user statistics"""
         user = update.effective_user
+        
+        # Get user stats from database
         stats = await self.db.get_user_stats(user.id)
         
-        stats_text = f"""
-📊 **Ваша статистика:**
-
-📚 Всего слов: {stats['total_words']}
-✅ Изучено: {stats['learned_words']}
-📖 В процессе: {stats['words_in_progress']}
-🎯 Точность: {stats['accuracy_rate']:.1f}%
-
-Продолжайте изучение! 💪
-        """
+        stats_text = f"📊 *Ваша статистика*\n\n"
+        stats_text += f"📚 Всего слов: {stats.get('total_words', 0)}\n"
+        stats_text += f"✅ Изучено: {stats.get('learned_words', 0)}\n"
+        stats_text += f"📖 В процессе: {stats.get('learning_words', 0)}\n"
+        stats_text += f"🎯 Точность: {stats.get('accuracy', 0):.1f}%\n\n"
+        stats_text += f"🔥 Серия: {stats.get('streak', 0)} дней"
         
+        # Create web app button
         web_app = WebAppInfo(url=self.web_app_url)
         keyboard = [[InlineKeyboardButton("📚 Открыть карточки", web_app=web_app)]]
         reply_markup = InlineKeyboardMarkup(keyboard)
         
-        await update.message.reply_text(
-            stats_text,
-            reply_markup=reply_markup,
-            parse_mode='Markdown'
-        )
+        # Handle both callback query and message
+        if update.callback_query:
+            await update.callback_query.edit_message_text(
+                stats_text,
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
+        elif update.message:
+            await update.message.reply_text(
+                stats_text,
+                reply_markup=reply_markup,
+                parse_mode='Markdown'
+            )
     
     async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle text messages (new words)"""
@@ -428,14 +433,15 @@ class FlashcardsBot:
             )
             return
         
-        await self.process_new_word(update, text.lower())
+        await self.process_new_word(update, text.lower(), context)
     
-    async def process_new_word(self, update: Update, word: str):
+    async def process_new_word(self, update: Update, word: str, context: ContextTypes.DEFAULT_TYPE = None):
         """Process new word addition"""
         user = update.effective_user
         
         # Send "typing" action
-        await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
+        if context:
+            await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
         
         try:
             # Check if word already exists
@@ -496,6 +502,20 @@ class FlashcardsBot:
             )
         elif query.data == "stats":
             await self.stats_command(update, context)
+    
+    async def error_handler(self, update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+        """Handle errors in the bot"""
+        logger.error(f"Exception while handling an update: {context.error}")
+        
+        # Try to send error message to user if possible
+        if update and hasattr(update, 'effective_chat') and update.effective_chat:
+            try:
+                await context.bot.send_message(
+                    chat_id=update.effective_chat.id,
+                    text="❌ Произошла ошибка. Попробуйте еще раз или обратитесь к администратору."
+                )
+            except Exception as e:
+                logger.error(f"Failed to send error message: {e}")
     
     async def run(self):
         """Run the bot"""
