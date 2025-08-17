@@ -766,28 +766,29 @@
 
     <script>
         // Telegram WebApp initialization
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        // API configuration
-        const API_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:8000' 
-            : window.location.origin;
-        // Получение user_id из Telegram Mini App
         const tg = window.Telegram?.WebApp;
+        
+        // Get user ID from Telegram Mini App
         let USER_ID;
 
         if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.id) {
             USER_ID = tg.initDataUnsafe.user.id;
             console.log('Telegram user ID:', USER_ID);
+            tg.ready();
+            tg.expand();
         } else {
-                console.log('Ошибка: приложение не запущено из Telegram Mini App');
-                document.getElementById('word').textContent = 'Ошибка!';
-                document.getElementById('translation').textContent = 'Откройте через Telegram бота';
-                alert('Это приложение работает только в Telegram Mini App!');
-                throw new Error('Not running in Telegram Mini App');
+            console.error('Error: App not running in Telegram Mini App');
+            document.getElementById('word').textContent = 'Ошибка!';
+            document.getElementById('translation').textContent = 'Откройте через Telegram бота';
+            alert('Это приложение работает только в Telegram Mini App!');
+            throw new Error('Not running in Telegram Mini App');
         }
+
+        // API configuration
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:8000' 
+            : window.location.origin;
+        
         // Telegram WebApp theme
         if (tg.colorScheme === 'dark') {
             document.body.classList.add('dark-mode');
